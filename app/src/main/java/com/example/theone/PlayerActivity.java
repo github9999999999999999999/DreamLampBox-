@@ -17,12 +17,21 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.io.File;
 import java.util.List;
 
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
+
 public class PlayerActivity extends AppCompatActivity {
+    private static final String PREF_LAST_PATH = "last_video_path";
+    private static final String PREF_LAST_POS  = "last_video_position";
+
     private VideoView videoView;
     private RecyclerView rvList;
     private VideoListAdapter adapter;
     private FrameLayout sidePanel;
     private boolean isPanelShowing = false;
+
+    private File currentFile;          // 当前播放文件
+    private SharedPreferences prefs;   // 持久化存储
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -32,6 +41,8 @@ public class PlayerActivity extends AppCompatActivity {
         videoView = findViewById(R.id.video_view);
         rvList  = findViewById(R.id.rv_video_list);
         sidePanel = findViewById(R.id.side_panel);
+
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         // 取视频列表
         List<File> videos = VideoScanner.scan(this);
@@ -72,10 +83,27 @@ public class PlayerActivity extends AppCompatActivity {
 
     /* 播放指定文件 */
     public void playVideo(File f) {
+        currentFile = f;                                    // 记录当前文件
         videoView.stopPlayback();
         videoView.setVideoURI(Uri.fromFile(f));
-        videoView.start();
         hidePanel();
+
+        // 恢复上次进度：等加载完成后再 seek，防止失败
+        String savedPath = prefs.getString(PREF_LAST_PATH, "");
+        if (f.getAbsolutePath().equals(savedPath)) {
+            int pos = prefs.getInt(PREF_LAST_POS, 0);
+            if (pos > 0) {
+                // 监听 prepared 事件，确保视频已加载
+                videoView.setOnPreparedListener(mp -> {
+                    mp.seekTo(pos);
+                    mp.start();
+                    Toast.makeText(this, "已为你恢复上次播放进度", Toast.LENGTH_SHORT).show();
+                });
+                return; // 提前返回，避免下面再次 start()
+            }
+        }
+        // 无进度或新文件：直接播放
+        videoView.start();
     }
 
     /* 遥控器 OK 键播放当前焦点条目 */
@@ -114,5 +142,24 @@ public class PlayerActivity extends AppCompatActivity {
                 .setInterpolator(new AccelerateDecelerateInterpolator())
                 .start();
         isPanelShowing = false;
+    }
+
+    /* ============== 断点续播 ============== */
+
+    /* 保存播放进度 */
+    private void saveProgress() {
+        if (currentFile != null && videoView != null) {
+            int pos = videoView.getCurrentPosition();
+            prefs.edit()
+                 .putString(PREF_LAST_PATH, currentFile.getAbsolutePath())
+                 .putInt(PREF_LAST_POS, pos)
+                 .apply();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        saveProgress();
     }
 }
