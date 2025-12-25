@@ -1,45 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <!-- 全屏播放区域 - 使用 ExoPlayer -->
-    <com.google.android.exoplayer2.ui.StyledPlayerView
+    <!-- Layer 1: PlayerView (Full Screen) -->
+    <androidx.media3.ui.PlayerView
         android:id="@+id/player_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="visible" />
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="visible"
+        app:resize_mode="fit"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- 无视频提示 -->
+    <!-- No Video Message -->
     <TextView
         android:id="@+id/tv_no_video"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="请放入视频文件（支持 MKV/MP4 等）"
         android:textSize="24sp"
+        android:textColor="#FFFFFF"
         android:visibility="gone"
-        android:layout_gravity="center" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- 侧边抽屉容器 - 占据屏幕下半部分 -->
-    <FrameLayout
-        android:id="@+id/drawer_container"
-        android:layout_width="match_parent"
-        android:layout_height="280dp"
-        android:layout_gravity="bottom"
-        android:background="#000000"
+    <!-- Layer 2: RecyclerView (Sidebar Overlay, Right 33%) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_videos"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#AA000000"
+        android:paddingTop="16dp"
+        android:clipToPadding="false"
         android:visibility="gone"
-        android:clickable="true"
-        android:focusable="true">
+        app:layout_constraintWidth_percent="0.33"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_videos"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingTop="16dp"
-            android:clipToPadding="false" />
-    </FrameLayout>
-
-</FrameLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
