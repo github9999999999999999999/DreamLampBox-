@@ -197,13 +197,6 @@ public class MainActivity extends AppCompatActivity {
 
         videoView.setVideoURI(Uri.fromFile(file));
         videoView.setOnPreparedListener(mp -> {
-            mp.setOnInfoListener((mp1, what, extra) -> {
-                if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
-                    videoView.setBackgroundColor(Color.TRANSPARENT);
-                    return true;
-                }
-                return false;
-            });
             
             // 确保不循环，由 OnCompletionListener 接管
             mp.setLooping(false);
@@ -213,10 +206,26 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "恢复播放: " + file.getName(), Toast.LENGTH_SHORT).show();
             }
             videoView.start();
+            
+            // 开始播放时隐藏侧边栏
+            drawerContainer.setVisibility(View.GONE);
         });
 
         // 播放完成 -> 自动下一个
-        videoView.setOnCompletionListener(mp -> playNext());
+        videoView.setOnCompletionListener(mp -> {
+            playNext();
+            // 播放完成时显示侧边栏
+            drawerContainer.setVisibility(View.VISIBLE);
+        });
+
+        // 监听视频渲染开始（去除黑屏）
+        videoView.setOnInfoListener((mp, what, extra) -> {
+            if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
+                videoView.setBackgroundColor(Color.TRANSPARENT);
+                return true;
+            }
+            return false;
+        });
 
         videoView.setOnErrorListener((mp, what, extra) -> {
             handlePlayError();
@@ -240,7 +249,8 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         if (videoView.isPlaying()) {
             videoView.pause();
-            toggleDrawer(true); // 暂停时显示列表
+            // 暂停时显示侧边栏
+            drawerContainer.setVisibility(View.VISIBLE);
         }
         saveProgress();
     }
