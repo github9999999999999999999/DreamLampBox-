@@ -106,13 +106,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkPermissions() {
         if (Build.VERSION.SDK_INT >= 33) {
-            // Android 13+ 视频权限
+            // Android 13/14/15+ 视频权限适配
+            // Android 15 (API 35) 依然沿用 READ_MEDIA_VIDEO
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO)
                 != PackageManager.PERMISSION_GRANTED) {
+                Log.d("Debug_DLBox", "checkPermissions: 请求 Android 13+ 视频权限")
                 ActivityCompat.requestPermissions(this,
                     arrayOf(Manifest.permission.READ_MEDIA_VIDEO),
                     REQ_READ_STORAGE)
             } else {
+                Log.d("Debug_DLBox", "checkPermissions: Android 13+ 视频权限已授予，直接扫描")
                 scanFiles()
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
