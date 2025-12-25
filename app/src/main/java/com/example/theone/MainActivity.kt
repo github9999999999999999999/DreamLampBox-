@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.preference.PreferenceManager
 import android.provider.Settings
 import android.util.Log
 import android.view.GestureDetector
@@ -18,7 +17,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.EdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -37,7 +36,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQ_READ_STORAGE = 1001
-        private const val REQ_MANAGE_STORAGE = 1002
         private const val PREF_LAST_PATH = "last_path"
         private const val PREF_LAST_POS = "last_pos"
         private const val TAG = "MainActivity"
@@ -54,6 +52,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var prefs: SharedPreferences
     private lateinit var gestureDetector: GestureDetector
     private var player: ExoPlayer? = null
+
+    private val storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                scanFiles()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,7 +87,7 @@ class MainActivity : AppCompatActivity() {
         // 设置列表容器背景为黑色
         drawerContainer.setBackgroundColor(android.graphics.Color.BLACK)
 
-        prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        prefs = getSharedPreferences("theone_prefs", MODE_PRIVATE)
 
         // 初始化手势检测
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
@@ -102,7 +108,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
-                startActivityForResult(intent, REQ_MANAGE_STORAGE)
+                storagePermissionLauncher.launch(intent)
             } else {
                 scanFiles()
             }
@@ -125,15 +131,6 @@ class MainActivity : AppCompatActivity() {
             scanFiles()
         } else {
             Toast.makeText(this, "需要存储权限才能播放", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQ_MANAGE_STORAGE) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
-                scanFiles()
-            }
         }
     }
 

@@ -18,7 +18,6 @@ import java.io.File;
 import java.util.List;
 
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 
 public class PlayerActivity extends AppCompatActivity {
     private static final String PREF_LAST_PATH = "last_video_path";
@@ -42,7 +41,7 @@ public class PlayerActivity extends AppCompatActivity {
         rvList  = findViewById(R.id.rv_video_list);
         sidePanel = findViewById(R.id.side_panel);
 
-        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        prefs = getSharedPreferences("theone_prefs", MODE_PRIVATE);
 
         // 取视频列表
         List<File> videos = VideoScanner.scan(this);
