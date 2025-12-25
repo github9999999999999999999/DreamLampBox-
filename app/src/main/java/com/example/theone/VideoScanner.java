@@ -21,7 +21,7 @@ public class VideoScanner {
             // Streaming formats
             "m3u8", 
             // Legacy formats (device dependent)
-            "avi", "mov", "flv", "wmv", "asf", 
+            "avi", "mov", "flv", "wmv", "asf", "mpg", "mpeg", "vob", "f4v",
             // High definition
             "m2ts", "mts"
     };
