@@ -57,8 +57,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EdgeToEdge.enable(this)
+        Log.d("Debug_DLBox", "onCreate: 开始执行")
+        
         setContentView(R.layout.activity_main)
+        Log.d("Debug_DLBox", "onCreate: 布局设置完成")
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -66,10 +68,15 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        tvNoVideo = findViewById(R.id.tv_no_video)
-        playerView = findViewById(R.id.player_view)
-        rvVideos = findViewById(R.id.rv_videos)
-        drawerContainer = findViewById(R.id.drawer_container)
+        // 空指针保护：检查所有 findViewById 调用
+        tvNoVideo = findViewById(R.id.tv_no_video) ?: TextView(this).apply {
+            text = "请放入视频文件（支持 MKV/MP4 等）"
+        }
+        playerView = findViewById(R.id.player_view) ?: com.google.android.exoplayer2.ui.StyledPlayerView(this)
+        rvVideos = findViewById(R.id.rv_videos) ?: RecyclerView(this)
+        drawerContainer = findViewById(R.id.drawer_container) ?: FrameLayout(this)
+        
+        Log.d("Debug_DLBox", "onCreate: UI组件初始化完成")
 
         // 设置列表容器背景为黑色
         drawerContainer.setBackgroundColor(android.graphics.Color.BLACK)
@@ -78,15 +85,16 @@ class MainActivity : AppCompatActivity() {
 
         // 初始化手势检测
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
-                if (e1 != null && e2 != null && (e2.x - e1.x) > 80 && velocityX < -200) {
+            override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                if ((e2.x - e1.x) > 80 && velocityX < -200) {
                     toggleDrawer()
                     return true
                 }
                 return false
             }
         })
-
+        
+        Log.d("Debug_DLBox", "onCreate: 准备检查权限")
         checkPermissions()
     }
 
@@ -130,12 +138,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scanFiles() {
+        Log.d("Debug_DLBox", "scanFiles: 开始扫描文件")
         Thread {
             val files = VideoScanner.scan(this)
             // 按文件名排序
             files.sortWith { f1, f2 -> f1.name.compareTo(f2.name, ignoreCase = true) }
 
             runOnUiThread {
+                Log.d("Debug_DLBox", "scanFiles: UI线程处理扫描结果，文件数量: ${files.size}")
+                
                 videoFiles.clear()
                 videoFiles.addAll(files)
                 
@@ -143,129 +154,196 @@ class MainActivity : AppCompatActivity() {
                 Log.d(TAG, "扫描到视频文件数量: ${files.size}")
                 
                 if (videoFiles.isEmpty()) {
+                    Log.d("Debug_DLBox", "scanFiles: 未找到视频文件，显示提示")
                     Toast.makeText(this, "路径错误：未找到视频文件", Toast.LENGTH_LONG).show()
                     showNoVideo()
                     return@runOnUiThread
                 }
                 
-                initPlayerUI()
-                // 开机首播 - 播放第一个文件
-                playVideo(videoFiles[0])
+                // 延迟初始化：使用 Handler 延迟执行播放器初始化
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    Log.d("Debug_DLBox", "延迟初始化: 开始初始化播放器UI")
+                    initPlayerUI()
+                    
+                    // 再次延迟播放，确保UI完全加载
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        Log.d("Debug_DLBox", "延迟播放: 开始播放第一个视频")
+                        playVideo(videoFiles[0])
+                    }, 300)
+                }, 500)
             }
         }.start()
     }
 
     private fun initPlayerUI() {
-        // 初始化 ExoPlayer
-        player = ExoPlayer.Builder(this).build().apply {
-            playerView.player = this
-            
-            // 强制绑定监听器
-            addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    when (playbackState) {
-                        Player.STATE_ENDED -> {
-                            Log.d(TAG, "播放完成，准备下一集")
-                            // 自动下一集逻辑
-                            currentIndex = (currentIndex + 1) % videoFiles.size()
-                            playVideo(videoFiles[currentIndex])
-                        }
-                        Player.STATE_READY -> {
-                            Log.d(TAG, "播放器准备就绪")
-                        }
-                        Player.STATE_BUFFERING -> {
-                            Log.d(TAG, "正在缓冲")
-                        }
-                        Player.STATE_IDLE -> {
-                            Log.d(TAG, "播放器空闲")
+        Log.d("Debug_DLBox", "initPlayerUI: 开始初始化播放器")
+        
+        // 空指针保护：检查 playerView
+        if (::playerView.isInitialized && playerView != null) {
+            // 初始化 ExoPlayer
+            player = ExoPlayer.Builder(this).build().apply {
+                playerView.player = this
+                
+                // 强制绑定监听器
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        Log.d("Debug_DLBox", "播放状态改变: $playbackState")
+                        when (playbackState) {
+                            Player.STATE_ENDED -> {
+                                Log.d(TAG, "播放完成，准备下一集")
+                                // 自动下一集逻辑
+                                currentIndex = (currentIndex + 1) % videoFiles.size
+                                playVideo(videoFiles[currentIndex])
+                            }
+                            Player.STATE_READY -> {
+                                Log.d(TAG, "播放器准备就绪")
+                            }
+                            Player.STATE_BUFFERING -> {
+                                Log.d(TAG, "正在缓冲")
+                            }
+                            Player.STATE_IDLE -> {
+                                Log.d(TAG, "播放器空闲")
+                            }
                         }
                     }
-                }
 
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    super.onIsPlayingChanged(isPlaying)
-                    Log.d(TAG, "播放状态改变: isPlaying = $isPlaying")
-                    
-                    // 修复暂停显示逻辑
-                    if (isPlaying) {
-                        // 播放时隐藏侧边栏
-                        drawerContainer.visibility = View.GONE
-                    } else {
-                        // 暂停时显示侧边栏
-                        drawerContainer.visibility = View.VISIBLE
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        super.onIsPlayingChanged(isPlaying)
+                        Log.d(TAG, "播放状态改变: isPlaying = $isPlaying")
+                        
+                        // 修复暂停显示逻辑
+                        if (isPlaying) {
+                            // 播放时隐藏侧边栏
+                            if (::drawerContainer.isInitialized) {
+                                drawerContainer.visibility = View.GONE
+                            }
+                        } else {
+                            // 暂停时显示侧边栏
+                            if (::drawerContainer.isInitialized) {
+                                drawerContainer.visibility = View.VISIBLE
+                            }
+                        }
                     }
-                }
 
-                override fun onPlayerError(error: com.google.android.exoplayer2.PlaybackException) {
-                    super.onPlayerError(error)
-                    Log.e(TAG, "播放错误: ${error.message}")
-                    Toast.makeText(this@MainActivity, "播放失败，尝试下一个", Toast.LENGTH_SHORT).show()
-                    playNext()
-                }
-            })
+                    override fun onPlayerError(error: com.google.android.exoplayer2.PlaybackException) {
+                        super.onPlayerError(error)
+                        Log.e(TAG, "播放错误: ${error.message}")
+                        Toast.makeText(this@MainActivity, "播放失败，尝试下一个", Toast.LENGTH_SHORT).show()
+                        playNext()
+                    }
+                })
+            }
+            Log.d("Debug_DLBox", "initPlayerUI: ExoPlayer初始化完成")
+        } else {
+            Log.e("Debug_DLBox", "initPlayerUI: playerView未初始化")
+            return
         }
 
-        // 设置列表适配器
-        adapter = VideoListAdapter(this, videoFiles)
-        adapter.setOnItemClickListener { file ->
-            saveProgress()
-            currentIndex = videoFiles.indexOf(file)
-            playVideo(file)
-            toggleDrawer(false)
+        // 空指针保护：检查 RecyclerView 和适配器
+        if (::rvVideos.isInitialized && rvVideos != null) {
+            // 设置列表适配器
+            adapter = VideoListAdapter(this, videoFiles)
+            adapter.setOnItemClickListener { file ->
+                saveProgress()
+                currentIndex = videoFiles.indexOf(file)
+                playVideo(file)
+                toggleDrawer(false)
+            }
+            rvVideos.layoutManager = LinearLayoutManager(this)
+            rvVideos.adapter = adapter
+            Log.d("Debug_DLBox", "initPlayerUI: RecyclerView适配器设置完成")
+        } else {
+            Log.e("Debug_DLBox", "initPlayerUI: rvVideos未初始化")
         }
-        rvVideos.layoutManager = LinearLayoutManager(this)
-        rvVideos.adapter = adapter
     }
 
     private fun playVideo(file: File) {
-        tvNoVideo.visibility = View.GONE
-        playerView.visibility = View.VISIBLE
+        Log.d("Debug_DLBox", "playVideo: 开始播放文件: ${file.name}")
+        
+        // 安全检查：确保文件存在且可读
+        if (!file.exists() || !file.canRead()) {
+            Log.e("Debug_DLBox", "playVideo: 文件不存在或不可读: ${file.absolutePath}")
+            Toast.makeText(this, "视频文件无法访问，尝试下一个", Toast.LENGTH_SHORT).show()
+            playNext()
+            return
+        }
+        
+        // 空指针保护
+        if (::tvNoVideo.isInitialized) tvNoVideo.visibility = View.GONE
+        if (::playerView.isInitialized) playerView.visibility = View.VISIBLE
         
         player?.let { exoPlayer ->
-            // 创建媒体项
-            val mediaItem = MediaItem.fromUri(Uri.fromFile(file))
-            
-            // 恢复断点播放
-            val lastPath = prefs.getString(PREF_LAST_PATH, "")
-            val lastPos = prefs.getInt(PREF_LAST_POS, 0)
-            
-            // 设置媒体项并准备
-            exoPlayer.setMediaItem(mediaItem)
-            exoPlayer.prepare()
-            
-            // 如果是同一个文件且有断点，则恢复播放位置
-            if (file.absolutePath == lastPath && lastPos > 0) {
-                exoPlayer.seekTo(lastPos.toLong())
-                Toast.makeText(this, "已为你恢复上次播放进度", Toast.LENGTH_SHORT).show()
+            try {
+                // 创建媒体项
+                val mediaItem = MediaItem.fromUri(Uri.fromFile(file))
+                
+                // 恢复断点播放
+                val lastPath = prefs.getString(PREF_LAST_PATH, "")
+                val lastPos = prefs.getInt(PREF_LAST_POS, 0)
+                
+                Log.d("Debug_DLBox", "playVideo: 设置媒体项，文件路径: ${file.absolutePath}")
+                
+                // 设置媒体项并准备
+                exoPlayer.setMediaItem(mediaItem)
+                exoPlayer.prepare()
+                
+                // 如果是同一个文件且有断点，则恢复播放位置
+                if (file.absolutePath == lastPath && lastPos > 0) {
+                    Log.d("Debug_DLBox", "playVideo: 恢复断点播放，位置: $lastPos")
+                    exoPlayer.seekTo(lastPos.toLong())
+                    Toast.makeText(this, "已为你恢复上次播放进度", Toast.LENGTH_SHORT).show()
+                }
+                
+                // 开始播放
+                exoPlayer.play()
+                Log.d("Debug_DLBox", "playVideo: 播放开始")
+                
+                // 初始状态：列表必须是 GONE 隐藏状态
+                if (::drawerContainer.isInitialized) {
+                    drawerContainer.visibility = View.GONE
+                }
+            } catch (e: Exception) {
+                Log.e("Debug_DLBox", "playVideo: 播放异常", e)
+                Toast.makeText(this, "播放失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                playNext()
             }
-            
-            // 开始播放
-            exoPlayer.play()
-            
-            // 初始状态：列表必须是 GONE 隐藏状态
-            drawerContainer.visibility = View.GONE
+        } ?: run {
+            Log.e("Debug_DLBox", "playVideo: player为null")
+            Toast.makeText(this, "播放器未初始化", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun playNext() {
-        if (videoFiles.isEmpty()) return
-        currentIndex = (currentIndex + 1) % videoFiles.size()
+        Log.d("Debug_DLBox", "playNext: 尝试播放下一个视频")
+        if (videoFiles.isEmpty()) {
+            Log.d("Debug_DLBox", "playNext: 视频文件列表为空")
+            return
+        }
+        currentIndex = (currentIndex + 1) % videoFiles.size
+        Log.d("Debug_DLBox", "playNext: 下一个索引: $currentIndex")
         playVideo(videoFiles[currentIndex])
     }
 
     override fun onPause() {
         super.onPause()
+        Log.d("Debug_DLBox", "onPause: 保存播放进度")
         saveProgress()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d("Debug_DLBox", "onDestroy: 释放资源")
         saveProgress()
         player?.release()
+        Log.d("Debug_DLBox", "onDestroy: 播放器已释放")
     }
 
     private fun saveProgress() {
-        if (videoFiles.isEmpty() || player == null) return
+        Log.d("Debug_DLBox", "saveProgress: 尝试保存播放进度")
+        if (videoFiles.isEmpty() || player == null) {
+            Log.d("Debug_DLBox", "saveProgress: 视频文件为空或播放器为null，跳过保存")
+            return
+        }
         
         try {
             val currentFile = videoFiles[currentIndex]
@@ -275,8 +353,10 @@ class MainActivity : AppCompatActivity() {
                 .putInt(PREF_LAST_POS, position.toInt())
                 .apply()
             Log.d(TAG, "保存进度: ${currentFile.name} 位置: $position")
+            Log.d("Debug_DLBox", "saveProgress: 进度保存成功")
         } catch (e: Exception) {
             Log.e(TAG, "保存进度失败", e)
+            Log.e("Debug_DLBox", "saveProgress: 保存进度异常", e)
         }
     }
 

@@ -23,12 +23,12 @@
         android:visibility="gone"
         android:layout_gravity="center" />
 
-    <!-- 侧边抽屉容器 -->
+    <!-- 侧边抽屉容器 - 占据屏幕下半部分 -->
     <FrameLayout
         android:id="@+id/drawer_container"
-        android:layout_width="280dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="start"
+        android:layout_width="match_parent"
+        android:layout_height="280dp"
+        android:layout_gravity="bottom"
         android:background="#000000"
         android:visibility="gone"
         android:clickable="true"

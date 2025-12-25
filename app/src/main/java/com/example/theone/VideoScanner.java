@@ -14,7 +14,16 @@ import java.util.List;
 
 public class VideoScanner {
     private static final String[] EXTENSIONS = {
-            "mp4", "mkv", "avi", "flv", "mov", "rmvb", "wmv", "3gp", "webm", "ts"
+            // Core reliable formats
+            "mp4", "m4v", "mkv", "webm", "ts", 
+            // Mobile formats  
+            "3gp", "3g2",
+            // Streaming formats
+            "m3u8", 
+            // Legacy formats (device dependent)
+            "avi", "mov", "flv", "wmv", "asf", 
+            // High definition
+            "m2ts", "mts"
     };
 
     public static List<File> scan(Context ctx) {
