@@ -91,8 +91,8 @@ class MainActivity : AppCompatActivity() {
 
         // 初始化手势检测
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(e1: MotionEvent, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if ((e2.x - e1.x) > 80 && velocityX < -200) {
+            override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
+                if (e1 != null && e2 != null && (e2.x - e1.x) > 80 && velocityX < -200) {
                     toggleDrawer()
                     return true
                 }
@@ -191,7 +191,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("Debug_DLBox", "initPlayerUI: 开始初始化播放器")
         
         // 空指针保护：检查 playerView
-        if (::playerView.isInitialized && playerView != null) {
+        if (::playerView.isInitialized) {
             // 初始化 ExoPlayer
             player = ExoPlayer.Builder(this).build().apply {
                 playerView.player = this
@@ -252,7 +252,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 空指针保护：检查 RecyclerView 和适配器
-        if (::rvVideos.isInitialized && rvVideos != null) {
+        if (::rvVideos.isInitialized) {
             // 设置列表适配器
             adapter = VideoListAdapter(this, videoFiles)
             adapter.setOnItemClickListener { file ->
