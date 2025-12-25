@@ -40,6 +40,8 @@ dependencies {
     implementation(libs.constraintlayout)
     // Glide for video thumbnail
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    // ExoPlayer for video playback
+    implementation("com.google.android.exoplayer:exoplayer:2.19.1")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
