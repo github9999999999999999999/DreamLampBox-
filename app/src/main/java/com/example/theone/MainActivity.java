@@ -18,6 +18,8 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
+import android.media.MediaPlayer;
+import android.graphics.Color;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -41,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvNoVideo;
     private RecyclerView rvVideos;
     private VideoView videoView;
+    private File currentFile;
     private FrameLayout drawerContainer;
     private SharedPreferences prefs;
     private List<File> videoFiles;
@@ -161,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
 
     /* 带恢复进度的播放 */
     private void playVideoWithResume(File file, int pos) {
+        currentFile = file;
         tvNoVideo.setVisibility(View.GONE);
         videoView.setVisibility(View.VISIBLE);
         drawerContainer.setVisibility(View.GONE);   // 默认收起
@@ -168,11 +172,22 @@ public class MainActivity extends AppCompatActivity {
 
         videoView.setVideoURI(Uri.fromFile(file));
         videoView.setOnPreparedListener(mp -> {
+            mp.setOnInfoListener((mp1, what, extra) -> {
+                if (what == MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
+                    videoView.setBackgroundColor(Color.TRANSPARENT);
+                    return true;
+                }
+                return false;
+            });
             if (pos > 0) {
                 videoView.seekTo(pos);
                 Toast.makeText(this, "已为你恢复上次播放进度", Toast.LENGTH_SHORT).show();
             }
             videoView.start();
+        });
+        videoView.setOnErrorListener((mp, what, extra) -> {
+            handlePlayError();
+            return true;
         });
     }
 
@@ -243,9 +258,29 @@ public class MainActivity extends AppCompatActivity {
     private void toggleDrawer() {
         if (drawerContainer.getVisibility() == View.VISIBLE) {
             drawerContainer.setVisibility(View.GONE);
+            videoView.requestFocus();   // 焦点还给播放器
         } else {
             drawerContainer.setVisibility(View.VISIBLE);
             rvVideos.requestFocus();
         }
+    }
+
+    private void handlePlayError() {
+        Toast.makeText(this, "播放失败，尝试下一个", Toast.LENGTH_SHORT).show();
+        if (videoFiles.isEmpty()) return;
+        int idx = 0;
+        for (int i = 0; i < videoFiles.size(); i++) {
+            if (videoFiles.get(i).equals(currentFile)) {
+                idx = i;
+                break;
+            }
+        }
+        int next = (idx + 1) % videoFiles.size();
+        File nextFile = videoFiles.get(next);
+        prefs.edit()
+             .putString(PREF_LAST_PATH, nextFile.getAbsolutePath())
+             .putInt(PREF_LAST_POS, 0)
+             .apply();
+        playVideo(nextFile);
     }
 }
