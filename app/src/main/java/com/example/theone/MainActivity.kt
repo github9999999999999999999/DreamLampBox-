@@ -16,9 +16,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -35,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
     private val REQ_READ_STORAGE = 1001
 
+    private lateinit var drawerLayout: DrawerLayout
     private lateinit var playerView: PlayerView
     private lateinit var rvVideos: RecyclerView
     private lateinit var tvNoVideo: TextView
@@ -62,6 +65,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Initialize Views
+        drawerLayout = findViewById(R.id.drawer_layout)
         playerView = findViewById(R.id.player_view)
         rvVideos = findViewById(R.id.rv_videos)
         tvNoVideo = findViewById(R.id.tv_no_video)
@@ -74,13 +78,32 @@ class MainActivity : AppCompatActivity() {
         }
         
         // Ensure content extends into cutouts/system bars
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.drawer_layout)) { v, insets ->
             insets
         }
 
         // Setup RecyclerView (Standard Vertical Scroll)
         rvVideos.layoutManager = LinearLayoutManager(this)
         
+        // Setup Drawer Listener to auto-resume when drawer is closed manually
+        drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerClosed(drawerView: View) {
+                super.onDrawerClosed(drawerView)
+                // If user swipes close, resume playback
+                if (player != null && !player!!.isPlaying) {
+                    player!!.play()
+                }
+            }
+        })
+
+        // Disable swipe to open?
+        // User wants "On Pause: List Visible". "On Play: List Gone".
+        // Usually we lock the drawer when playing so user doesn't accidentally swipe it out?
+        // But user said "右侧菜单必须是一个浮在视频上方的 覆盖层".
+        // Let's keep it unlocked for now, or maybe LOCK_CLOSED when playing?
+        // "菜单划出时，视频底图不动".
+        // To be safe, let's allow swipe.
+
         checkPermissions()
     }
 
@@ -218,13 +241,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateListVisibility(showList: Boolean) {
         if (showList) {
-            // State: PAUSED -> Show List (Right Overlay)
-            rvVideos.visibility = View.VISIBLE
-            // Scroll list to current video
+            // State: PAUSED -> Open Drawer (Overlay)
+            drawerLayout.openDrawer(GravityCompat.END)
             rvVideos.scrollToPosition(currentIndex)
         } else {
-            // State: PLAYING -> Hide List (Full Screen Video)
-            rvVideos.visibility = View.GONE
+            // State: PLAYING -> Close Drawer
+            drawerLayout.closeDrawer(GravityCompat.END)
         }
     }
 
@@ -234,15 +256,14 @@ class MainActivity : AppCompatActivity() {
         player = null
     }
 
-    // Handle Back Press to toggle list or exit
+    // Handle Back Press to close drawer or exit
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (rvVideos.visibility == View.VISIBLE) {
-            // If list is showing (Paused), hide it and Resume? 
-            // Or just hide it? User spec says "PAUSED: List Visible".
-            // If user presses back, maybe they want to resume?
-            // Let's resume playback
-            player?.play()
+        if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
+            drawerLayout.closeDrawer(GravityCompat.END)
+            // Optional: Resume playback if user closes menu via back?
+            // The DrawerListener will handle resume if we close it here?
+            // Yes, closeDrawer() triggers onDrawerClosed() which resumes.
         } else {
             super.onBackPressed()
         }
