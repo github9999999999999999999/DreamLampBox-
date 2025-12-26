@@ -8,12 +8,13 @@
     tools:context=".MainActivity">
 
     <!-- Layer 0: Video Player (Always Full Screen, Bottom) -->
+    <!-- CRITICAL: resize_mode="zoom" enforces CenterCrop behavior -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/player_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
-        app:resize_mode="fit" />
+        app:resize_mode="zoom" />
 
     <!-- Optional: No Video Text -->
     <TextView
@@ -26,13 +27,13 @@
         android:textColor="#FFFFFF"
         android:visibility="gone" />
 
-    <!-- Layer 1: Full Screen Overlay Menu (Top) -->
-    <!-- Width/Height match_parent = Full Screen Overlay -->
-    <!-- Background = Semi-transparent Black -->
+    <!-- Layer 1: Side Menu Overlay (Top, Right Aligned) -->
+    <!-- layout_gravity="end" ensures it floats on the right -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_videos"
-        android:layout_width="match_parent"
+        android:layout_width="380dp"
         android:layout_height="match_parent"
+        android:layout_gravity="end"
         android:background="#CC000000"
         android:padding="0dp"
         android:clipToPadding="false"
