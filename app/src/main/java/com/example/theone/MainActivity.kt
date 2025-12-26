@@ -25,7 +25,6 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.PagerSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
 import java.util.Collections
@@ -79,11 +78,9 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Setup RecyclerView with PagerSnapHelper for "TikTok-style" list scrolling
+        // Setup RecyclerView (Standard Vertical Scroll)
         rvVideos.layoutManager = LinearLayoutManager(this)
-        val snapHelper = PagerSnapHelper()
-        snapHelper.attachToRecyclerView(rvVideos)
-
+        
         checkPermissions()
     }
 

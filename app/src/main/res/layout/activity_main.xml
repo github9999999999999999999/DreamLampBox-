@@ -33,16 +33,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Layer 2: RecyclerView (Sidebar Overlay, Right 33%) -->
+    <!-- Layer 2: RecyclerView (Sidebar Overlay, Right 40%) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_videos"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#AA000000"
+        android:background="#99000000"
         android:padding="0dp"
         android:clipToPadding="false"
         android:visibility="gone"
-        app:layout_constraintWidth_percent="0.33"
+        app:layout_constraintWidth_percent="0.4"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
