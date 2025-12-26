@@ -70,41 +70,45 @@ class MainActivity : AppCompatActivity() {
         rvVideos = findViewById(R.id.rv_videos)
         tvNoVideo = findViewById(R.id.tv_no_video)
 
-        // Immersive Fullscreen Mode
-        val windowInsetsController = ViewCompat.getWindowInsetsController(window.decorView)
-        windowInsetsController?.let {
-            it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            it.hide(WindowInsetsCompat.Type.systemBars())
-        }
-        
-        // Ensure content extends into cutouts/system bars
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.drawer_layout)) { v, insets ->
-            insets
-        }
-
         // Setup RecyclerView (Standard Vertical Scroll)
         rvVideos.layoutManager = LinearLayoutManager(this)
         
-        // Setup Drawer Listener to auto-resume when drawer is closed manually
+        // Setup Drawer Listener
         drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerClosed(drawerView: View) {
                 super.onDrawerClosed(drawerView)
-                // If user swipes close, resume playback
+                // Resume playback when drawer is closed manually
                 if (player != null && !player!!.isPlaying) {
                     player!!.play()
                 }
             }
         })
 
-        // Disable swipe to open?
-        // User wants "On Pause: List Visible". "On Play: List Gone".
-        // Usually we lock the drawer when playing so user doesn't accidentally swipe it out?
-        // But user said "右侧菜单必须是一个浮在视频上方的 覆盖层".
-        // Let's keep it unlocked for now, or maybe LOCK_CLOSED when playing?
-        // "菜单划出时，视频底图不动".
-        // To be safe, let's allow swipe.
+        // Ensure Drawer is closed initially
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
+        drawerLayout.closeDrawer(GravityCompat.END)
 
         checkPermissions()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        hideSystemUI()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            hideSystemUI()
+        }
+    }
+
+    private fun hideSystemUI() {
+        val windowInsetsController = ViewCompat.getWindowInsetsController(window.decorView)
+        windowInsetsController?.let {
+            it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            it.hide(WindowInsetsCompat.Type.systemBars())
+        }
     }
 
     private fun checkPermissions() {
@@ -166,9 +170,7 @@ class MainActivity : AppCompatActivity() {
     private fun scanFiles() {
         Log.d(TAG, "scanFiles: Scanning started")
         thread {
-            // Call Java helper
             val files = VideoScanner.scan(this)
-            // Sort by name
             Collections.sort(files) { f1, f2 -> f1.name.compareTo(f2.name, ignoreCase = true) }
 
             runOnUiThread {
@@ -180,10 +182,8 @@ class MainActivity : AppCompatActivity() {
                     return@runOnUiThread
                 }
 
-                // Setup Adapter
                 adapter = VideoListAdapter(this, videoFiles)
                 adapter?.setOnItemClickListener { file ->
-                    // Click item in list -> Play selected video
                     currentIndex = videoFiles.indexOf(file)
                     playVideo(file)
                 }
@@ -204,18 +204,18 @@ class MainActivity : AppCompatActivity() {
             player?.addListener(object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) {
-                        Log.d(TAG, "Playback Ended -> Auto-playing next")
                         playNext()
                     }
                 }
 
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    Log.d(TAG, "isPlaying: $isPlaying")
+                    // Interaction Logic:
+                    // Playing -> Close Menu (Pure Fullscreen)
+                    // Paused -> Open Menu (Overlay)
                     updateListVisibility(!isPlaying)
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    Log.e(TAG, "Player Error: ${error.message}")
                     Toast.makeText(this@MainActivity, "播放出错: ${error.message}", Toast.LENGTH_SHORT).show()
                     playNext()
                 }
@@ -226,11 +226,11 @@ class MainActivity : AppCompatActivity() {
     private fun playVideo(file: File) {
         if (player == null) initPlayer()
 
-        Log.d(TAG, "Playing: ${file.name}")
         val mediaItem = MediaItem.fromUri(Uri.fromFile(file))
         player?.setMediaItem(mediaItem)
         player?.prepare()
-        player?.play() // This will trigger onIsPlayingChanged(true) -> Hide List
+        player?.play() 
+        // player.play() triggers onIsPlayingChanged(true) -> Close Drawer
     }
 
     private fun playNext() {
@@ -241,11 +241,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateListVisibility(showList: Boolean) {
         if (showList) {
-            // State: PAUSED -> Open Drawer (Overlay)
             drawerLayout.openDrawer(GravityCompat.END)
             rvVideos.scrollToPosition(currentIndex)
         } else {
-            // State: PLAYING -> Close Drawer
             drawerLayout.closeDrawer(GravityCompat.END)
         }
     }
@@ -256,14 +254,10 @@ class MainActivity : AppCompatActivity() {
         player = null
     }
 
-    // Handle Back Press to close drawer or exit
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
             drawerLayout.closeDrawer(GravityCompat.END)
-            // Optional: Resume playback if user closes menu via back?
-            // The DrawerListener will handle resume if we close it here?
-            // Yes, closeDrawer() triggers onDrawerClosed() which resumes.
         } else {
             super.onBackPressed()
         }
