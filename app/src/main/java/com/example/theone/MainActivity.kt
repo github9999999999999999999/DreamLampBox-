@@ -16,11 +16,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -37,7 +35,6 @@ class MainActivity : AppCompatActivity() {
     private val TAG = "MainActivity"
     private val REQ_READ_STORAGE = 1001
 
-    private lateinit var drawerLayout: DrawerLayout
     private lateinit var playerView: PlayerView
     private lateinit var rvVideos: RecyclerView
     private lateinit var tvNoVideo: TextView
@@ -65,7 +62,6 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // Initialize Views
-        drawerLayout = findViewById(R.id.drawer_layout)
         playerView = findViewById(R.id.player_view)
         rvVideos = findViewById(R.id.rv_videos)
         tvNoVideo = findViewById(R.id.tv_no_video)
@@ -73,20 +69,8 @@ class MainActivity : AppCompatActivity() {
         // Setup RecyclerView (Standard Vertical Scroll)
         rvVideos.layoutManager = LinearLayoutManager(this)
         
-        // Setup Drawer Listener
-        drawerLayout.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
-            override fun onDrawerClosed(drawerView: View) {
-                super.onDrawerClosed(drawerView)
-                // Resume playback when drawer is closed manually
-                if (player != null && !player!!.isPlaying) {
-                    player!!.play()
-                }
-            }
-        })
-
-        // Ensure Drawer is closed initially
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED)
-        drawerLayout.closeDrawer(GravityCompat.END)
+        // Hide list initially
+        rvVideos.visibility = View.GONE
 
         checkPermissions()
     }
@@ -230,7 +214,6 @@ class MainActivity : AppCompatActivity() {
         player?.setMediaItem(mediaItem)
         player?.prepare()
         player?.play() 
-        // player.play() triggers onIsPlayingChanged(true) -> Close Drawer
     }
 
     private fun playNext() {
@@ -241,10 +224,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateListVisibility(showList: Boolean) {
         if (showList) {
-            drawerLayout.openDrawer(GravityCompat.END)
+            rvVideos.visibility = View.VISIBLE
             rvVideos.scrollToPosition(currentIndex)
         } else {
-            drawerLayout.closeDrawer(GravityCompat.END)
+            rvVideos.visibility = View.GONE
         }
     }
 
@@ -256,8 +239,12 @@ class MainActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.END)) {
-            drawerLayout.closeDrawer(GravityCompat.END)
+        if (rvVideos.visibility == View.VISIBLE) {
+            rvVideos.visibility = View.GONE
+            // Resume if user backs out of menu?
+            if (player != null && !player!!.isPlaying) {
+                player!!.play()
+            }
         } else {
             super.onBackPressed()
         }

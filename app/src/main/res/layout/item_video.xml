@@ -7,11 +7,11 @@
     android:focusableInTouchMode="true"
     android:background="?attr/selectableItemBackground">
 
-    <!-- Thumbnail: Absolute Edge-to-Edge, Fixed Height 220dp, CenterCrop -->
+    <!-- Thumbnail: Absolute Full Width, Height 280dp, CenterCrop -->
     <ImageView
         android:id="@+id/iv_thumb"
-        android:layout_width="0dp"
-        android:layout_height="220dp"
+        android:layout_width="match_parent"
+        android:layout_height="280dp"
         android:scaleType="centerCrop"
         android:background="#333333"
         app:layout_constraintTop_toTopOf="parent"
@@ -19,17 +19,18 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <!-- Video Name: Overlay at bottom of image, Full Width, Semi-transparent background -->
+    <!-- Video Name: Overlay at bottom of image, Full Width -->
     <TextView
         android:id="@+id/tv_name"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#B3000000"
+        android:background="#CC000000"
         android:textColor="#FFFFFF"
-        android:textSize="14sp"
+        android:textSize="18sp"
+        android:textStyle="bold"
         android:maxLines="2"
         android:ellipsize="end"
-        android:padding="8dp"
+        android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="@id/iv_thumb"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
