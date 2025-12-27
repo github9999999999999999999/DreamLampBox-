@@ -10,7 +10,6 @@ import android.os.Environment
 import android.provider.Settings
 import android.util.Log
 import android.view.View
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -36,8 +35,8 @@ class MainActivity : AppCompatActivity() {
     private val REQ_READ_STORAGE = 1001
 
     private lateinit var playerView: PlayerView
-    private lateinit var rvVideos: RecyclerView
-    private lateinit var tvNoVideo: TextView
+    private lateinit var rvMenu: RecyclerView
+    // private lateinit var tvNoVideo: TextView // Removed as per strict XML overwrite
 
     private var player: ExoPlayer? = null
     private val videoFiles = ArrayList<File>()
@@ -63,14 +62,14 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize Views
         playerView = findViewById(R.id.player_view)
-        rvVideos = findViewById(R.id.rv_videos)
-        tvNoVideo = findViewById(R.id.tv_no_video)
+        rvMenu = findViewById(R.id.rv_menu)
+        // tvNoVideo = findViewById(R.id.tv_no_video)
 
         // Setup RecyclerView (Standard Vertical Scroll)
-        rvVideos.layoutManager = LinearLayoutManager(this)
+        rvMenu.layoutManager = LinearLayoutManager(this)
         
         // Hide list initially
-        rvVideos.visibility = View.GONE
+        rvMenu.visibility = View.GONE
 
         checkPermissions()
     }
@@ -162,7 +161,8 @@ class MainActivity : AppCompatActivity() {
                 videoFiles.addAll(files)
 
                 if (videoFiles.isEmpty()) {
-                    tvNoVideo.visibility = View.VISIBLE
+                    // tvNoVideo.visibility = View.VISIBLE
+                    Toast.makeText(this, "没有找到视频文件", Toast.LENGTH_LONG).show()
                     return@runOnUiThread
                 }
 
@@ -171,7 +171,7 @@ class MainActivity : AppCompatActivity() {
                     currentIndex = videoFiles.indexOf(file)
                     playVideo(file)
                 }
-                rvVideos.adapter = adapter
+                rvMenu.adapter = adapter
 
                 // Auto-play first video
                 initPlayer()
@@ -224,10 +224,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateListVisibility(showList: Boolean) {
         if (showList) {
-            rvVideos.visibility = View.VISIBLE
-            rvVideos.scrollToPosition(currentIndex)
+            rvMenu.visibility = View.VISIBLE
+            rvMenu.scrollToPosition(currentIndex)
         } else {
-            rvVideos.visibility = View.GONE
+            rvMenu.visibility = View.GONE
         }
     }
 
@@ -239,8 +239,8 @@ class MainActivity : AppCompatActivity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (rvVideos.visibility == View.VISIBLE) {
-            rvVideos.visibility = View.GONE
+        if (rvMenu.visibility == View.VISIBLE) {
+            rvMenu.visibility = View.GONE
             // Resume if user backs out of menu?
             if (player != null && !player!!.isPlaying) {
                 player!!.play()

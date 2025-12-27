@@ -1,36 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="0dp"
-    android:layout_margin="0dp"
-    android:background="@android:color/transparent">
+    android:layout_margin="0dp">
 
-    <!-- Thumbnail: Absolute Full Width, Height 220dp, CenterCrop -->
     <ImageView
         android:id="@+id/iv_thumb"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="220dp"
         android:scaleType="centerCrop"
-        android:background="@android:color/transparent"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        android:src="@drawable/ic_launcher_background" />
 
-    <!-- Video Name: Overlay at bottom of image, Full Width, Semi-transparent Black Background -->
     <TextView
-        android:id="@+id/tv_name"
-        android:layout_width="match_parent"
+        android:id="@+id/tv_title"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="#99000000"
+        android:padding="8dp"
+        android:text="Video Title"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:maxLines="2"
         android:ellipsize="end"
-        android:padding="12dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/iv_thumb"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

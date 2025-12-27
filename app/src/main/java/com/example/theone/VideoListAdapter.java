@@ -78,7 +78,7 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VH> 
         VH(@NonNull View itemView) {
             super(itemView);
             ivThumb = itemView.findViewById(R.id.iv_thumb);
-            tvName = itemView.findViewById(R.id.tv_name);
+            tvName = itemView.findViewById(R.id.tv_title);
         }
     }
 }
