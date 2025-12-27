@@ -45,6 +45,7 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VH> 
         Glide.with(holder.itemView.getContext())
                 .asBitmap()
                 .load(f)
+                .centerCrop() // Explicitly centerCrop
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
                 .placeholder(R.drawable.ic_launcher_foreground)
                 .into(holder.ivThumb);
@@ -54,16 +55,8 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VH> 
             if(listener != null) listener.onItemClick(f);
         });
 
-        // TV 焦点高亮
-        holder.itemView.setOnFocusChangeListener((v, hasFocus) -> {
-            if (hasFocus) {
-                v.setBackgroundResource(R.drawable.bg_focused);
-                v.animate().scaleX(1.05f).scaleY(1.05f).setDuration(150).start();
-            } else {
-                v.setBackgroundResource(0);
-                v.animate().scaleX(1f).scaleY(1f).setDuration(150).start();
-            }
-        });
+        // REMOVED FOCUS LISTENER to prevent white background/scaling issues
+        
         // 让 item 可获取焦点
         holder.itemView.setFocusable(true);
         holder.itemView.setFocusableInTouchMode(true);
