@@ -47,10 +47,12 @@ android {
 }
 
 dependencies {
-    implementation(libs.appcompat)
-    implementation(libs.material)
-    implementation(libs.activity)
-    implementation(libs.constraintlayout)
+    // Use compatible stable versions for API 21
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    // Key: Force specify activity version 1.8.0 (supports API 21) to override transitive dependencies
+    implementation("androidx.activity:activity:1.8.0")
     // Glide for video thumbnail
     implementation("com.github.bumptech.glide:glide:4.16.0")
     // Media3 (ExoPlayer) for video playback
