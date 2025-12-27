@@ -7,6 +7,15 @@ android {
     namespace = "com.example.theone"
     compileSdk = 36
 
+    signingConfigs {
+        getByName("debug") {
+            v1SigningEnabled = true
+        }
+        create("release") {
+            v1SigningEnabled = true
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.theone"
         minSdk = 21
@@ -18,7 +27,6 @@ android {
 
         ndk {
             abiFilters.add("armeabi-v7a")
-            abiFilters.add("arm64-v8a")
         }
     }
 
@@ -29,6 +37,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
