@@ -5,7 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="0dp"
-    android:padding="0dp">
+    android:padding="0dp"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:background="@drawable/bg_focused">
 
     <ImageView
         android:id="@+id/iv_thumb"

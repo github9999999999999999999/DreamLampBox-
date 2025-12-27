@@ -249,4 +249,108 @@ class MainActivity : AppCompatActivity() {
             super.onBackPressed()
         }
     }
+
+    // TV遥控器按键支持
+    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        return when (keyCode) {
+            android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                navigateUp()
+                true
+            }
+            android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                navigateDown()
+                true
+            }
+            android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                navigateLeft()
+                true
+            }
+            android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                navigateRight()
+                true
+            }
+            android.view.KeyEvent.KEYCODE_DPAD_CENTER, 
+            android.view.KeyEvent.KEYCODE_ENTER -> {
+                selectCurrentItem()
+                true
+            }
+            android.view.KeyEvent.KEYCODE_BACK -> {
+                onBackPressed()
+                true
+            }
+            android.view.KeyEvent.KEYCODE_MENU -> {
+                toggleMenu()
+                true
+            }
+            android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                togglePlayback()
+                true
+            }
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    private fun navigateUp() {
+        if (adapter != null && currentIndex > 0) {
+            currentIndex--
+            rvMenu.scrollToPosition(currentIndex)
+            // 高亮当前项目
+            val viewHolder = rvMenu.findViewHolderForAdapterPosition(currentIndex)
+            viewHolder?.itemView?.requestFocus()
+        }
+    }
+
+    private fun navigateDown() {
+        if (adapter != null && currentIndex < videoFiles.size - 1) {
+            currentIndex++
+            rvMenu.scrollToPosition(currentIndex)
+            // 高亮当前项目
+            val viewHolder = rvMenu.findViewHolderForAdapterPosition(currentIndex)
+            viewHolder?.itemView?.requestFocus()
+        }
+    }
+
+    private fun navigateLeft() {
+        // 快退10秒
+        player?.let {
+            val newPosition = maxOf(it.currentPosition - 10000, 0)
+            it.seekTo(newPosition)
+        }
+    }
+
+    private fun navigateRight() {
+        // 快进10秒
+        player?.let {
+            val newPosition = minOf(it.currentPosition + 10000, it.duration)
+            it.seekTo(newPosition)
+        }
+    }
+
+    private fun selectCurrentItem() {
+        if (videoFiles.isNotEmpty() && currentIndex >= 0 && currentIndex < videoFiles.size) {
+            playVideo(videoFiles[currentIndex])
+        }
+    }
+
+    private fun toggleMenu() {
+        if (rvMenu.visibility == View.VISIBLE) {
+            rvMenu.visibility = View.GONE
+            player?.play()
+        } else {
+            rvMenu.visibility = View.VISIBLE
+            player?.pause()
+        }
+    }
+
+    private fun togglePlayback() {
+        player?.let {
+            if (it.isPlaying) {
+                it.pause()
+                updateListVisibility(true)
+            } else {
+                it.play()
+                updateListVisibility(false)
+            }
+        }
+    }
 }
