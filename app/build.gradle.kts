@@ -9,12 +9,17 @@ android {
 
     defaultConfig {
         applicationId = "com.example.theone"
-        minSdk = 26
+        minSdk = 21
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters.add("armeabi-v7a")
+            abiFilters.add("arm64-v8a")
+        }
     }
 
     buildTypes {
