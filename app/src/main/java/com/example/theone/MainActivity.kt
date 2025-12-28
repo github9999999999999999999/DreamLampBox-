@@ -33,6 +33,11 @@ class MainActivity : AppCompatActivity() {
 
     private val TAG = "MainActivity"
     private val REQ_READ_STORAGE = 1001
+    
+    // 断点记忆播放常量
+    private val PREFS_NAME = "video_playback_prefs"
+    private val KEY_VIDEO_PATH = "video_path_"
+    private val KEY_PLAYBACK_POSITION = "playback_position_"
 
     private lateinit var playerView: PlayerView
     private lateinit var rvMenu: RecyclerView
@@ -42,6 +47,8 @@ class MainActivity : AppCompatActivity() {
     private val videoFiles = ArrayList<File>()
     private var currentIndex = 0
     private var adapter: VideoListAdapter? = null
+    private lateinit var sharedPrefs: android.content.SharedPreferences
+    private var currentPlayingFile: File? = null
 
     // Register Activity Result for Android 11+ (R) storage permission
     private val storagePermissionLauncher = registerForActivityResult(
@@ -59,6 +66,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // 初始化 SharedPreferences 用于断点记忆播放
+        sharedPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         // Initialize Views
         playerView = findViewById(R.id.player_view)

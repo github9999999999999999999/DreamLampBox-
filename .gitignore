@@ -1,15 +1,129 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Android 项目专用 .gitignore
+# 用于保护敏感信息和构建文件
+
+# Gradle 构建文件
+.gradle/
+build/
+**/build/
+gradle-app.setting
+.gradletasknamecache
+gradle.properties
+!gradle.properties.example
+
+# 本地配置文件
 local.properties
+local.defaults.properties
+gradle.properties
+local.release.properties
+local.debug.properties
+
+# 签名密钥文件（绝对禁止上传）
+*.jks
+*.keystore
+*.p12
+*.pfx
+app/release/app-release.apk
+app/debug/app-debug.apk
+app/release/output-metadata.json
+app/debug/output-metadata.json
+
+# Google 服务配置文件（包含敏感信息）
+google-services.json
+google-services-debug.json
+google-services-release.json
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/navEditor.xml
+.idea/render.experimental.xml
+.idea/deploymentTargetDropDown.xml
+
+# OS 生成文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 日志文件
+*.log
+logs/
+log/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+
+# 测试视频文件（版权风险）
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wmv
+*.flv
+*.m4v
+*.3gp
+*.ts
+*.m3u8
+
+# 大型二进制文件
+*.jar
+*.war
+*.ear
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# NDK 和本地构建
+.externalNativeBuild
+.cxx/
+obj/
+lib/
+
+# 缓存文件
+.cache/
+*.cache
+
+# 备份文件
+*.backup
+*.orig
+
+# 发布目录
+/release/
+/debug/
+/app/release/
+/app/debug/
+
+# 测试覆盖率报告
+*.exec
+*.ec
+
+# 其他敏感文件
+secret*
+password*
+key*
+token*
+credential*
+config*.json
+!config.example.json
+
+# 保持这些文件被跟踪
+!app/.gitignore
+!.gitignore
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
