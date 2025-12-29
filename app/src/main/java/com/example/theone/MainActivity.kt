@@ -26,6 +26,8 @@ import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
+import android.view.ViewTreeObserver
+import android.widget.FrameLayout
 import java.util.Collections
 import kotlin.concurrent.thread
 
@@ -49,6 +51,8 @@ class MainActivity : AppCompatActivity() {
     private var adapter: VideoListAdapter? = null
     private lateinit var sharedPrefs: android.content.SharedPreferences
     private var currentPlayingFile: File? = null
+    private var isMenuVisible = false
+    private var lastFocusedView: View? = null
 
     // Register Activity Result for Android 11+ (R) storage permission
     private val storagePermissionLauncher = registerForActivityResult(
@@ -77,6 +81,17 @@ class MainActivity : AppCompatActivity() {
 
         // Setup RecyclerView (Standard Vertical Scroll)
         rvMenu.layoutManager = LinearLayoutManager(this)
+        
+        // 设置焦点变化监听器，确保焦点在菜单项目间流转
+        rvMenu.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus && isMenuVisible) {
+                // 如果RecyclerView获得焦点，将焦点转移到当前项目
+                rvMenu.post {
+                    val currentView = rvMenu.layoutManager?.findViewByPosition(currentIndex)
+                    currentView?.requestFocus()
+                }
+            }
+        }
         
         // Hide list initially
         rvMenu.visibility = View.GONE
@@ -183,6 +198,17 @@ class MainActivity : AppCompatActivity() {
                 }
                 rvMenu.adapter = adapter
 
+                // 设置适配器注册监听器，确保项目准备好后请求焦点
+                rvMenu.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        if (isMenuVisible) {
+                            requestMenuFocus()
+                        }
+                        // 只执行一次
+                        rvMenu.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    }
+                })
+
                 // Auto-play first video
                 initPlayer()
                 playVideo(videoFiles[0])
@@ -236,8 +262,23 @@ class MainActivity : AppCompatActivity() {
         if (showList) {
             rvMenu.visibility = View.VISIBLE
             rvMenu.scrollToPosition(currentIndex)
+            isMenuVisible = true
+            // 强制请求焦点到菜单的第一个项目
+            rvMenu.post {
+                val firstView = rvMenu.layoutManager?.findViewByPosition(currentIndex)
+                if (firstView != null) {
+                    lastFocusedView = firstView
+                    firstView.requestFocus()
+                } else {
+                    // 如果第一个项目还没准备好，请求RecyclerView本身的焦点
+                    rvMenu.requestFocus()
+                }
+            }
         } else {
             rvMenu.visibility = View.GONE
+            isMenuVisible = false
+            // 菜单关闭时，将焦点还给播放器区域
+            playerView.requestFocus()
         }
     }
 
@@ -251,6 +292,8 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (rvMenu.visibility == View.VISIBLE) {
             rvMenu.visibility = View.GONE
+            isMenuVisible = false
+            playerView.requestFocus()  // 将焦点还给播放器
             // Resume if user backs out of menu?
             if (player != null && !player!!.isPlaying) {
                 player!!.play()
@@ -262,6 +305,43 @@ class MainActivity : AppCompatActivity() {
 
     // TV遥控器按键支持
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
+        // 如果菜单可见，拦截所有按键事件，防止透传到播放器
+        if (isMenuVisible) {
+            return when (keyCode) {
+                android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                    navigateUp()
+                    true
+                }
+                android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                    navigateDown()
+                    true
+                }
+                android.view.KeyEvent.KEYCODE_DPAD_LEFT -> {
+                    navigateLeft()
+                    true
+                }
+                android.view.KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                    navigateRight()
+                    true
+                }
+                android.view.KeyEvent.KEYCODE_DPAD_CENTER, 
+                android.view.KeyEvent.KEYCODE_ENTER -> {
+                    selectCurrentItem()
+                    true
+                }
+                android.view.KeyEvent.KEYCODE_BACK -> {
+                    onBackPressed()
+                    true
+                }
+                android.view.KeyEvent.KEYCODE_MENU -> {
+                    toggleMenu()
+                    true
+                }
+                else -> true // 拦截所有其他按键，防止透传
+            }
+        }
+        
+        // 菜单不可见时的正常处理
         return when (keyCode) {
             android.view.KeyEvent.KEYCODE_DPAD_UP -> {
                 navigateUp()
@@ -304,9 +384,14 @@ class MainActivity : AppCompatActivity() {
         if (adapter != null && currentIndex > 0) {
             currentIndex--
             rvMenu.scrollToPosition(currentIndex)
-            // 高亮当前项目
-            val viewHolder = rvMenu.findViewHolderForAdapterPosition(currentIndex)
-            viewHolder?.itemView?.requestFocus()
+            // 高亮当前项目并请求焦点
+            rvMenu.post {
+                val viewHolder = rvMenu.findViewHolderForAdapterPosition(currentIndex)
+                viewHolder?.itemView?.requestFocus()
+                if (viewHolder?.itemView != null) {
+                    lastFocusedView = viewHolder.itemView
+                }
+            }
         }
     }
 
@@ -314,9 +399,14 @@ class MainActivity : AppCompatActivity() {
         if (adapter != null && currentIndex < videoFiles.size - 1) {
             currentIndex++
             rvMenu.scrollToPosition(currentIndex)
-            // 高亮当前项目
-            val viewHolder = rvMenu.findViewHolderForAdapterPosition(currentIndex)
-            viewHolder?.itemView?.requestFocus()
+            // 高亮当前项目并请求焦点
+            rvMenu.post {
+                val viewHolder = rvMenu.findViewHolderForAdapterPosition(currentIndex)
+                viewHolder?.itemView?.requestFocus()
+                if (viewHolder?.itemView != null) {
+                    lastFocusedView = viewHolder.itemView
+                }
+            }
         }
     }
 
@@ -345,10 +435,17 @@ class MainActivity : AppCompatActivity() {
     private fun toggleMenu() {
         if (rvMenu.visibility == View.VISIBLE) {
             rvMenu.visibility = View.GONE
+            isMenuVisible = false
+            playerView.requestFocus()  // 将焦点还给播放器
             player?.play()
         } else {
             rvMenu.visibility = View.VISIBLE
+            isMenuVisible = true
             player?.pause()
+            // 延迟请求焦点，确保菜单完全显示
+            rvMenu.postDelayed({
+                requestMenuFocus()  // 使用专门的焦点请求方法
+            }, 100)
         }
     }
 
@@ -362,5 +459,30 @@ class MainActivity : AppCompatActivity() {
                 updateListVisibility(false)
             }
         }
+    }
+
+    /**
+     * 请求菜单焦点 - 确保焦点正确转移到菜单
+     */
+    private fun requestMenuFocus() {
+        if (isMenuVisible) {
+            rvMenu.post {
+                val currentView = rvMenu.layoutManager?.findViewByPosition(currentIndex)
+                if (currentView != null) {
+                    currentView.requestFocus()
+                    lastFocusedView = currentView
+                } else {
+                    // 如果当前项目视图还没准备好，请求RecyclerView焦点
+                    rvMenu.requestFocus()
+                }
+            }
+        }
+    }
+
+    /**
+     * 请求播放器焦点 - 将焦点还给播放器
+     */
+    private fun requestPlayerFocus() {
+        playerView.requestFocus()
     }
 }

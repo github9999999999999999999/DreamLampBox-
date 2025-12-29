@@ -55,7 +55,16 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VH> 
             if(listener != null) listener.onItemClick(f);
         });
 
-        // REMOVED FOCUS LISTENER to prevent white background/scaling issues
+        // 添加焦点变化监听器，确保视觉反馈
+        holder.itemView.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                // 获得焦点时的视觉反馈
+                v.setBackgroundResource(R.drawable.bg_focused);
+            } else {
+                // 失去焦点时恢复默认背景
+                v.setBackgroundResource(0);
+            }
+        });
         
         // 让 item 可获取焦点
         holder.itemView.setFocusable(true);
