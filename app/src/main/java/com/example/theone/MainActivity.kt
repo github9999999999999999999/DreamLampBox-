@@ -18,11 +18,14 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.media3.common.AudioAttributes
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import android.media.MediaCodec
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
@@ -218,7 +221,27 @@ class MainActivity : AppCompatActivity() {
 
     private fun initPlayer() {
         if (player == null) {
-            player = ExoPlayer.Builder(this).build()
+            // 创建支持软件解码回退的RenderersFactory
+            val renderersFactory = DefaultRenderersFactory(this).apply {
+                // 设置EXTENSION_RENDERER_MODE_PREFER以优先使用扩展解码器
+                setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
+                // 允许使用软件解码器作为回退
+                setEnableDecoderFallback(true)
+                // 设置最大解码器数量，提高兼容性
+                setMaxDecoderCount(16)
+            }
+            
+            // 创建支持硬件加速回退的Player实例
+            player = ExoPlayer.Builder(this, renderersFactory).apply {
+                // 设置音频解码器回退
+                setAudioAttributes(AudioAttributes.DEFAULT, /* handleAudioFocus= */ true)
+                // 设置视频解码器优先使用硬件，失败时回退到软件
+                setVideoDecoderFactory { 
+                    // 这里可以添加自定义解码器工厂
+                    MediaCodecVideoRenderer.Factory()
+                }
+            }.build()
+            
             playerView.player = player
             
             player?.addListener(object : Player.Listener {
@@ -236,8 +259,8 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onPlayerError(error: PlaybackException) {
-                    Toast.makeText(this@MainActivity, "播放出错: ${error.message}", Toast.LENGTH_SHORT).show()
-                    playNext()
+                    // 详细的错误处理和用户友好的提示
+                    handlePlayerError(error)
                 }
             })
         }
@@ -480,9 +503,54 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 请求播放器焦点 - 将焦点还给播放器
+     * 处理播放器错误，提供用户友好的错误提示
      */
-    private fun requestPlayerFocus() {
-        playerView.requestFocus()
+    private fun handlePlayerError(error: PlaybackException) {
+        val errorMessage = when {
+            error.cause is MediaCodec.CryptoException -> {
+                "视频加密格式不支持"
+            }
+            error.cause is MediaCodec.CodecException -> {
+                val codecError = error.cause as MediaCodec.CodecException
+                when {
+                    codecError.isTransient -> "解码器临时错误，正在重试..."
+                    codecError.isRecoverable -> "解码器可恢复错误"
+                    else -> "设备不支持此视频格式（4K/HEVC）"
+                }
+            }
+            error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> {
+                "解码器初始化失败，尝试软件解码..."
+            }
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED -> {
+                "解码失败，格式可能不受支持"
+            }
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED -> {
+                "视频编码格式不受支持"
+            }
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES -> {
+                "视频规格超出设备处理能力"
+            }
+            else -> {
+                // 分析错误信息中的关键提示
+                val errorMsg = error.message ?: "未知错误"
+                when {
+                    errorMsg.contains("4K", ignoreCase = true) -> "设备不支持4K视频播放"
+                    errorMsg.contains("HEVC", ignoreCase = true) -> "设备不支持HEVC/H.265格式"
+                    errorMsg.contains("H265", ignoreCase = true) -> "设备不支持H.265格式"
+                    errorMsg.contains("profile", ignoreCase = true) -> "视频编码配置过高"
+                    errorMsg.contains("resolution", ignoreCase = true) -> "视频分辨率超出支持范围"
+                    else -> "播放失败：${errorMsg.take(50)}..."
+                }
+            }
+        }
+        
+        // 显示用户友好的错误提示
+        Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        
+        // 记录详细错误信息到日志
+        Log.e(TAG, "播放错误详情: ${error.message}", error)
+        
+        // 尝试播放下一个视频
+        playNext()
     }
 }

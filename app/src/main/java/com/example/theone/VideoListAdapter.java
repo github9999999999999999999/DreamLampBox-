@@ -12,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransitionOptions;
+import com.bumptech.glide.Priority;
 
 import java.io.File;
 import java.util.List;
@@ -41,13 +43,24 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VH> 
         File f = data.get(position);
         holder.tvName.setText(f.getName());
 
-        // Glide 异步加载视频第一帧
+        // Glide 异步加载视频第一帧 - 优化4K/HEVC兼容性
         Glide.with(holder.itemView.getContext())
                 .asBitmap()
                 .load(f)
                 .centerCrop() // Explicitly centerCrop
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-                .placeholder(R.drawable.ic_launcher_foreground)
+                // 设置缩略图尺寸，避免OOM
+                .override(320, 180)  // 16:9 比例，适合TV显示
+                // 设置帧提取时间点（第1秒）
+                .frame(1000 * 1000)  // 1秒，单位是微秒
+                // 错误处理：显示美观的视频图标而不是系统默认图标
+                .error(R.drawable.ic_video_placeholder)
+                // 加载中显示轻量级占位图
+                .placeholder(R.drawable.ic_video_placeholder_small)
+                // 添加淡入动画提升用户体验
+                .transition(BitmapTransitionOptions.withCrossFade(300))
+                // 设置优先级，优先加载可见项目
+                .priority(Priority.IMMEDIATE)
                 .into(holder.ivThumb);
 
         // 点击事件
