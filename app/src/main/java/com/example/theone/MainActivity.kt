@@ -527,42 +527,43 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * 获取用户友好的错误消息（软解优先策略下）
+     * 使用成熟App的专业文案，避免技术黑话
      */
     private fun getFriendlyErrorMessage(error: PlaybackException): String {
         return when {
             error.cause is MediaCodec.CryptoException -> {
-                "视频加密格式不支持"
+                "[播放提示] 视频加密格式不支持"
             }
             error.cause is MediaCodec.CodecException -> {
                 val codecError = error.cause as MediaCodec.CodecException
                 when {
-                    codecError.isTransient -> "解码器临时错误，正在重试..."
-                    codecError.isRecoverable -> "解码器可恢复错误"
-                    else -> "设备不支持此视频格式（已尝试软件解码）"
+                    codecError.isTransient -> "[播放提示] 解码器临时错误，正在重试..."
+                    codecError.isRecoverable -> "[播放提示] 解码器可恢复错误"
+                    else -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
                 }
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> {
-                "解码器初始化失败（软件解码也不支持）"
+                "[播放提示] 解码器初始化失败，已尝试软件解码"
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED -> {
-                "解码失败，格式可能不受支持"
+                "[播放提示] 解码失败，格式可能不受支持"
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED -> {
-                "视频编码格式不受支持"
+                "[播放提示] 视频编码格式不受支持"
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES -> {
-                "视频规格超出设备处理能力（已尝试软件解码）"
+                "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
             }
             else -> {
                 // 分析错误信息中的关键提示
                 val errorMsg = error.message ?: "未知错误"
                 when {
-                    errorMsg.contains("4K", ignoreCase = true) -> "设备不支持4K视频播放（软件解码失败）"
-                    errorMsg.contains("HEVC", ignoreCase = true) -> "设备不支持HEVC/H.265格式（软件解码失败）"
-                    errorMsg.contains("H265", ignoreCase = true) -> "设备不支持H.265格式（软件解码失败）"
-                    errorMsg.contains("profile", ignoreCase = true) -> "视频编码配置过高"
-                    errorMsg.contains("resolution", ignoreCase = true) -> "视频分辨率超出支持范围"
-                    else -> "播放失败：${errorMsg.take(50)}...（已尝试软件解码）"
+                    errorMsg.contains("4K", ignoreCase = true) -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                    errorMsg.contains("HEVC", ignoreCase = true) -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                    errorMsg.contains("H265", ignoreCase = true) -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                    errorMsg.contains("profile", ignoreCase = true) -> "[播放提示] 视频编码配置过高"
+                    errorMsg.contains("resolution", ignoreCase = true) -> "[播放提示] 视频分辨率超出支持范围"
+                    else -> "[播放提示] 播放失败：${errorMsg.take(30)}...，已尝试软件解码。如画面卡顿，建议联系作者或更换播放源。"
                 }
             }
         }
