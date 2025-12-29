@@ -49,13 +49,13 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VH> 
                 .load(f)
                 .centerCrop() // Explicitly centerCrop
                 .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
-                // 设置缩略图尺寸，避免OOM
+                // Strategy 1: "降维打击" - 强制缩小尺寸，极大减少内存占用
                 .override(320, 180)  // 16:9 比例，适合TV显示
-                // 设置帧提取时间点（第1秒）
+                // Strategy 1: 获取第1秒的帧，通常比第0秒更稳定
                 .frame(1000 * 1000)  // 1秒，单位是微秒
-                // 错误处理：显示美观的视频图标而不是系统默认图标
+                // Strategy 2: "美颜遮瑕" - 加载失败时显示美观的占位图
                 .error(R.drawable.ic_video_placeholder)
-                // 加载中显示轻量级占位图
+                // Strategy 2: 加载中显示轻量级占位图
                 .placeholder(R.drawable.ic_video_placeholder_small)
                 // 添加淡入动画提升用户体验
                 .transition(BitmapTransitionOptions.withCrossFade(300))
