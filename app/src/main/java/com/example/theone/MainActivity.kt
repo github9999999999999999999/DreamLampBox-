@@ -25,7 +25,6 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import android.media.MediaCodec
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
@@ -221,25 +220,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun initPlayer() {
         if (player == null) {
-            // 创建支持软件解码回退的RenderersFactory
+            // 使用标准的DefaultRenderersFactory配置
+            // 移除所有不存在的方法调用
             val renderersFactory = DefaultRenderersFactory(this).apply {
-                // 设置EXTENSION_RENDERER_MODE_PREFER以优先使用扩展解码器
+                // 仅设置扩展渲染器模式，这是标准API
                 setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER)
-                // 允许使用软件解码器作为回退
-                setEnableDecoderFallback(true)
-                // 设置最大解码器数量，提高兼容性
-                setMaxDecoderCount(16)
             }
             
-            // 创建支持硬件加速回退的Player实例
+            // 创建标准的ExoPlayer实例
             player = ExoPlayer.Builder(this, renderersFactory).apply {
-                // 设置音频解码器回退
+                // 设置音频属性 - 这是标准API
                 setAudioAttributes(AudioAttributes.DEFAULT, /* handleAudioFocus= */ true)
-                // 设置视频解码器优先使用硬件，失败时回退到软件
-                setVideoDecoderFactory { 
-                    // 这里可以添加自定义解码器工厂
-                    MediaCodecVideoRenderer.Factory()
-                }
             }.build()
             
             playerView.player = player
