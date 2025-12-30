@@ -148,40 +148,50 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
+            Log.d(TAG, "🔍 检查Android 14权限: READ_MEDIA_VIDEO")
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VIDEO)
                 != PackageManager.PERMISSION_GRANTED
             ) {
+                Log.w(TAG, "⚠️ READ_MEDIA_VIDEO权限未授予，正在请求...")
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.READ_MEDIA_VIDEO),
                     REQ_READ_STORAGE
                 )
             } else {
+                Log.d(TAG, "✅ READ_MEDIA_VIDEO权限已授予，开始扫描文件")
                 scanFiles()
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) { // Android 11-12
+            Log.d(TAG, "🔍 检查Android 11-12权限: MANAGE_EXTERNAL_STORAGE")
             if (!Environment.isExternalStorageManager()) {
+                Log.w(TAG, "⚠️ 管理外部存储权限未授予，正在请求...")
                 try {
                     val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
                     intent.data = Uri.parse("package:$packageName")
                     storagePermissionLauncher.launch(intent)
                 } catch (e: Exception) {
+                    Log.e(TAG, "❌ 权限请求异常，使用备用方案", e)
                     val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
                     storagePermissionLauncher.launch(intent)
                 }
             } else {
+                Log.d(TAG, "✅ 管理外部存储权限已授予，开始扫描文件")
                 scanFiles()
             }
         } else { // Android 10 and below
+            Log.d(TAG, "🔍 检查Android 10及以下权限: READ_EXTERNAL_STORAGE")
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED
             ) {
+                Log.w(TAG, "⚠️ 读取外部存储权限未授予，正在请求...")
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
                     REQ_READ_STORAGE
                 )
             } else {
+                Log.d(TAG, "✅ 读取外部存储权限已授予，开始扫描文件")
                 scanFiles()
             }
         }
@@ -196,9 +206,13 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQ_READ_STORAGE && grantResults.isNotEmpty() &&
             grantResults[0] == PackageManager.PERMISSION_GRANTED
         ) {
+            Log.d(TAG, "✅ 权限授予成功 - Android 14 READ_MEDIA_VIDEO 已授权")
             scanFiles()
         } else {
-            Toast.makeText(this, "需要存储权限才能播放", Toast.LENGTH_LONG).show()
+            Log.e(TAG, "❌ 权限被拒绝 - 这将导致缩略图无法显示")
+            Toast.makeText(this, "需要存储权限才能播放和显示缩略图", Toast.LENGTH_LONG).show()
+            // 权限被拒绝，但仍尝试扫描（可能部分文件可访问）
+            scanFiles()
         }
     }
 

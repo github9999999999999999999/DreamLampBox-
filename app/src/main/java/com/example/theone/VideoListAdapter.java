@@ -22,6 +22,7 @@ import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.load.engine.GlideException;
 import android.graphics.Bitmap;
 import android.util.Log;
+import android.media.MediaMetadataRetriever;
 
 import java.io.File;
 import java.util.List;
@@ -51,41 +52,52 @@ public class VideoListAdapter extends RecyclerView.Adapter<VideoListAdapter.VH> 
         File f = data.get(position);
         holder.tvName.setText(f.getName());
 
-        // TV盒子友好型缩略图加载 - 4K视频专用优化方案
+        // 使用File对象加载 - Android 14本地文件最稳健方案
+        // 关键：使用File而非String路径，确保Glide正确识别为本地文件
+        File videoFile = new File(f.getAbsolutePath());
+        
+        // Android 14终极优化：4K本地视频帧提取专用方案
         Glide.with(holder.itemView.getContext())
                 .asBitmap()
-                .load(f)
-                // 1. 强制使用轻量化解码 - TV盒子内存优化关键
-                .format(DecodeFormat.PREFER_RGB_565)  // 比默认ARGB_8888省50%内存
-                .decode(VideoDecoder.class)  // 强制使用视频解码器
-                // 2. 极端降维打击 - 240x135足够TV盒子显示
-                .override(240, 135)  // 比320x180更轻量，确保不崩溃
-                // 3. 稳健帧提取策略
-                .frame(1000 * 1000)  // 第1秒关键帧，避免黑屏
-                // 4. 专业级错误处理与重试机制
+                .load(videoFile)  // 使用File对象，确保本地文件识别
+                // 1. 强制使用最稳健的视频帧提取参数
+                .set(VideoDecoder.FRAME_OPTION, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                // 2. RGB_565格式：比ARGB_8888节省50%内存，防止4K帧OOM
+                .format(DecodeFormat.PREFER_RGB_565)
+                // 3. 强制使用视频解码器，确保4K兼容性
+                .decode(VideoDecoder.class)
+                // 4. 320x180降维打击：平衡质量与内存占用
+                .override(320, 180)
+                // 5. 第1秒关键帧，避免黑屏问题
+                .frame(1000 * 1000)
+                // 6. 专业级错误处理与权限诊断
                 .listener(new RequestListener<Bitmap>() {
                     @Override
-                    public boolean onLoadFailed(@androidx.annotation.Nullable GlideException e, Object model, Target<Bitmap> target, boolean isFirstResource) {
-                        Log.e("VideoListAdapter", "缩略图加载失败: " + (e != null ? e.getMessage() : "未知错误") + ", 文件: " + f.getName());
-                        // 可以在这里添加重试逻辑或备用方案
+                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Bitmap> target, boolean isFirstResource) {
+                        Log.e("VideoListAdapter", "❌ 本地视频缩略图加载失败: " + (e != null ? e.getMessage() : "未知错误"));
+                        Log.e("VideoListAdapter", "📁 文件路径: " + videoFile.getAbsolutePath());
+                        Log.e("VideoListAdapter", "📊 文件存在: " + videoFile.exists() + ", 可读: " + videoFile.canRead());
+                        Log.e("VideoListAdapter", "💡 提示: 请检查Android 14 READ_MEDIA_VIDEO权限是否授予");
                         return false; // 允许错误处理继续
                     }
 
                     @Override
-                    public boolean onResourceReady(Bitmap resource, Object model, Target<Bitmap> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
-                        Log.d("VideoListAdapter", "缩略图加载成功: " + f.getName() + ", 尺寸: " + resource.getWidth() + "x" + resource.getHeight());
+                    public boolean onResourceReady(Bitmap resource, Object model, Target<Bitmap> target, DataSource dataSource, boolean isFirstResource) {
+                        Log.d("VideoListAdapter", "✅ 本地视频缩略图加载成功: " + videoFile.getName());
+                        Log.d("VideoListAdapter", "📐 缩略图尺寸: " + resource.getWidth() + "x" + resource.getHeight());
+                        Log.d("VideoListAdapter", "💾 内存格式: RGB_565 (节省50%内存)");
                         return false; // 允许正常显示
                     }
                 })
-                // 5. TV盒子专用显示优化
-                .centerCrop()  // 确保填满ImageView
-                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)  // 智能缓存策略
-                // 6. 双重占位图保障 - 彻底消除大机器人图标
-                .placeholder(R.drawable.ic_video_placeholder_small)  // 加载中显示
-                .error(R.drawable.ic_video_placeholder)  // 加载失败显示专业图标
-                // 7. 性能优化
-                .priority(Priority.IMMEDIATE)  // 优先加载可见项
-                .transition(BitmapTransitionOptions.withCrossFade(200))  // 短动画，提升感知性能
+                // 7. TV盒子专用显示优化
+                .centerCrop()
+                .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+                // 8. 双重占位图保障 - 专业图标体系
+                .placeholder(R.drawable.ic_video_placeholder_small)
+                .error(R.drawable.ic_video_placeholder)
+                // 9. 性能优化 - 短动画提升感知性能
+                .priority(Priority.IMMEDIATE)
+                .transition(BitmapTransitionOptions.withCrossFade(150))  // 更短动画，TV盒子优化
                 .into(holder.ivThumb);
 
         // 点击事件
