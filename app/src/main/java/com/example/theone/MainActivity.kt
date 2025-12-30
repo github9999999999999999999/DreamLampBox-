@@ -12,10 +12,12 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.AudioAttributes
@@ -101,6 +103,25 @@ class MainActivity : AppCompatActivity() {
         
         // Hide list initially
         rvMenu.visibility = View.GONE
+        
+        // 设置现代返回键处理 - Android 13+ 兼容
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (rvMenu.visibility == View.VISIBLE) {
+                    rvMenu.visibility = View.GONE
+                    isMenuVisible = false
+                    playerView.requestFocus()  // 将焦点还给播放器
+                    // Resume if user backs out of menu?
+                    if (player != null && !player!!.isPlaying) {
+                        player!!.play()
+                    }
+                } else {
+                    // 如果菜单不可见，允许默认返回行为（退出应用）
+                    isEnabled = false  // 禁用回调以允许默认行为
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
 
         checkPermissions()
     }
@@ -118,7 +139,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun hideSystemUI() {
-        val windowInsetsController = ViewCompat.getWindowInsetsController(window.decorView)
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController?.let {
             it.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             it.hide(WindowInsetsCompat.Type.systemBars())
@@ -314,21 +335,6 @@ class MainActivity : AppCompatActivity() {
         player = null
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (rvMenu.visibility == View.VISIBLE) {
-            rvMenu.visibility = View.GONE
-            isMenuVisible = false
-            playerView.requestFocus()  // 将焦点还给播放器
-            // Resume if user backs out of menu?
-            if (player != null && !player!!.isPlaying) {
-                player!!.play()
-            }
-        } else {
-            super.onBackPressed()
-        }
-    }
-
     // TV遥控器按键支持
     override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent?): Boolean {
         // 如果菜单可见，拦截所有按键事件，防止透传到播放器
@@ -356,7 +362,8 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 android.view.KeyEvent.KEYCODE_BACK -> {
-                    onBackPressed()
+                    // 使用现代返回键处理
+                    onBackPressedDispatcher.onBackPressed()
                     true
                 }
                 android.view.KeyEvent.KEYCODE_MENU -> {
@@ -391,7 +398,8 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             android.view.KeyEvent.KEYCODE_BACK -> {
-                onBackPressed()
+                // 使用现代返回键处理
+                onBackPressedDispatcher.onBackPressed()
                 true
             }
             android.view.KeyEvent.KEYCODE_MENU -> {
