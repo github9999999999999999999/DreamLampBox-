@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV盒子遥控器焦点高亮效果 - 专业级视觉反馈 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 焦点状态：高亮边框 + 轻微放大效果 -->
+    <item android:state_focused="true">
+        <layer-list>
+            <!-- 外层高亮边框 -->
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="#FF2196F3"/> <!-- 专业蓝色高亮 -->
+                    <corners android:radius="8dp"/> <!-- TV友好圆角 -->
+                </shape>
+            </item>
+            <!-- 内层内容区域 -->
+            <item android:left="3dp" android:right="3dp" android:top="3dp" android:bottom="3dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="#20FFFFFF"/> <!-- 20%白色叠加 -->
+                    <corners android:radius="5dp"/>
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    
+    <!-- 按下状态：深度反馈 -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#FF0D47A1"/> <!-- 深蓝色按下反馈 -->
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+    
+    <!-- 选中状态：确认反馈 -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#FF4CAF50"/> <!-- 绿色选中确认 -->
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+    
+    <!-- 默认状态：TV盒子友好背景 -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#10FFFFFF"/> <!-- 10%白色，不刺眼 -->
+            <corners android:radius="8dp"/>
+        </shape>
+    </item>
+</selector>

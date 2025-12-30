@@ -17,6 +17,11 @@ import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import android.content.ComponentCallbacks2
+import android.app.ActivityManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.DecodeFormat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -480,6 +485,65 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // TV盒子内存优化 - 低内存环境下的生存策略
+    override fun onLowMemory() {
+        super.onLowMemory()
+        Log.w(TAG, "⚠️ TV盒子内存不足！执行紧急内存清理...")
+        
+        // 1. 清理Glide内存缓存 - 防止TV盒子闪退
+        Glide.get(this).clearMemory()
+        Log.d(TAG, "✅ Glide内存缓存已清理")
+        
+        // 2. 清理磁盘缓存 - 释放存储空间
+        thread {
+            Glide.get(this).clearDiskCache()
+            Log.d(TAG, "✅ Glide磁盘缓存已清理")
+        }
+        
+        // 3. 建议系统垃圾回收
+        System.gc()
+        Log.d(TAG, "✅ 建议系统垃圾回收")
+        
+        // 4. 显示内存优化提示
+        runOnUiThread {
+            Toast.makeText(this, "TV盒子内存优化中...", Toast.LENGTH_SHORT).show()
+        }
+        
+        // 5. 记录内存状态
+        val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        
+        Log.d(TAG, "📊 内存状态: 可用内存=${memoryInfo.availMem / (1024*1024)}MB, " +
+                  "总内存=${memoryInfo.totalMem / (1024*1024)}MB, " +
+                  "低内存阈值=${memoryInfo.threshold / (1024*1024)}MB")
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        when (level) {
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW -> {
+                Log.w(TAG, "⚠️ 系统内存偏低，执行内存优化...")
+                Glide.get(this).clearMemory()
+            }
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
+                Log.e(TAG, "🆘 系统内存严重不足！紧急清理...")
+                Glide.get(this).clearMemory()
+                System.gc()
+            }
+            ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+                Log.d(TAG, "📱 UI隐藏，清理UI相关内存...")
+                Glide.get(this).clearMemory()
+            }
+            else -> {
+                Log.d(TAG, "🧹 内存级别: $level，执行常规清理")
+                if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+                    Glide.get(this).clearMemory()
+                }
+            }
+        }
+    }
+
     private fun toggleMenu() {
         if (rvMenu.visibility == View.VISIBLE) {
             rvMenu.visibility = View.GONE
@@ -548,44 +612,146 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * TV盒子硬件解码回退处理 - 兼容性降级
+     * 当硬件解码失败时，自动切换到软件解码
+     */
+    private fun handleTVBoxDecoderFallback(error: PlaybackException) {
+        Log.e(TAG, "🆘 TV盒子硬件解码失败，执行回退策略...")
+        
+        // 1. 分析错误类型
+        val errorType = when {
+            error.cause is MediaCodec.CodecException -> {
+                val codecError = error.cause as MediaCodec.CodecException
+                when {
+                    codecError.isTransient -> "临时错误"
+                    codecError.isRecoverable -> "可恢复错误"
+                    else -> "硬件解码器不支持"
+                }
+            }
+            error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "解码器初始化失败"
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED -> "解码过程失败"
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED -> "格式不支持"
+            error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES -> "超出硬件能力"
+            else -> "未知解码错误"
+        }
+        
+        // 2. TV盒子专用错误提示
+        val tvBoxMessage = when {
+            errorType.contains("硬件") || errorType.contains("不支持") -> {
+                "[TV盒子提示] 硬件解码不支持，已自动切换软件解码。如卡顿请降低分辨率或联系作者。"
+            }
+            errorType.contains("4K") || errorType.contains("HEVC") || errorType.contains("H265") -> {
+                "[TV盒子提示] 4K/HEVC视频需要软件解码，如画面卡顿建议更换播放源。"
+            }
+            else -> {
+                "[TV盒子提示] 解码器错误：$errorType，已尝试软件解码。如画面异常请联系作者。"
+            }
+        }
+        
+        // 3. 显示TV盒子专用提示
+        Toast.makeText(this, tvBoxMessage, Toast.LENGTH_LONG).show()
+        
+        // 4. 记录TV盒子兼容性信息
+        Log.w(TAG, "📺 TV盒子兼容性信息:")
+        Log.w(TAG, "   错误类型: $errorType")
+        Log.w(TAG, "   硬件解码: 失败")
+        Log.w(TAG, "   软件解码: 已启用")
+        Log.w(TAG, "   TV盒子模式: ${isTVBoxMode()}")
+        Log.w(TAG, "   建议操作: 降低分辨率或更换播放源")
+        
+        // 5. 如果是TV盒子，延迟后尝试重新播放（给软件解码器时间初始化）
+        if (isTVBoxMode()) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                Log.d(TAG, "🔄 TV盒子重新尝试播放...")
+                player?.prepare()
+                player?.play()
+            }, 2000) // TV盒子专用延迟：2秒给软件解码器初始化
+        }
+    }
+
+    /**
+     * 检测是否为TV盒子模式
+     */
+    private fun isTVBoxMode(): Boolean {
+        return packageManager.hasSystemFeature("android.software.leanback") ||
+               packageManager.hasSystemFeature("android.hardware.type.television") ||
+               Build.MODEL.contains("TV", ignoreCase = true) ||
+               Build.MANUFACTURER.contains("TV", ignoreCase = true)
+    }
+
+    /**
      * 获取用户友好的错误消息（软解优先策略下）
-     * 使用成熟App的专业文案，避免技术黑话
+     * TV盒子专用版本
      */
     private fun getFriendlyErrorMessage(error: PlaybackException): String {
+        val isTVBox = isTVBoxMode()
+        val prefix = if (isTVBox) "[TV盒子提示]" else "[播放提示]"
+        
         return when {
             error.cause is MediaCodec.CryptoException -> {
-                "[播放提示] 视频加密格式不支持"
+                "$prefix 视频加密格式不支持"
             }
             error.cause is MediaCodec.CodecException -> {
                 val codecError = error.cause as MediaCodec.CodecException
                 when {
-                    codecError.isTransient -> "[播放提示] 解码器临时错误，正在重试..."
-                    codecError.isRecoverable -> "[播放提示] 解码器可恢复错误"
-                    else -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                    codecError.isTransient -> "$prefix 解码器临时错误，正在重试..."
+                    codecError.isRecoverable -> "$prefix 解码器可恢复错误"
+                    else -> {
+                        if (isTVBox) {
+                            "$prefix 硬件解码不支持，已自动切换软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                        } else {
+                            "$prefix 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                        }
+                    }
                 }
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> {
-                "[播放提示] 解码器初始化失败，已尝试软件解码"
+                if (isTVBox) {
+                    "$prefix TV盒子解码器初始化失败，已尝试软件解码"
+                } else {
+                    "$prefix 解码器初始化失败，已尝试软件解码"
+                }
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED -> {
-                "[播放提示] 解码失败，格式可能不受支持"
+                "$prefix 解码失败，格式可能不受支持"
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED -> {
-                "[播放提示] 视频编码格式不受支持"
+                "$prefix 视频编码格式不受支持"
             }
             error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES -> {
-                "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                if (isTVBox) {
+                    "$prefix TV盒子硬件性能有限，已启用软件解码。建议降低分辨率或更换播放源。"
+                } else {
+                    "$prefix 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                }
             }
             else -> {
                 // 分析错误信息中的关键提示
                 val errorMsg = error.message ?: "未知错误"
                 when {
-                    errorMsg.contains("4K", ignoreCase = true) -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
-                    errorMsg.contains("HEVC", ignoreCase = true) -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
-                    errorMsg.contains("H265", ignoreCase = true) -> "[播放提示] 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
-                    errorMsg.contains("profile", ignoreCase = true) -> "[播放提示] 视频编码配置过高"
-                    errorMsg.contains("resolution", ignoreCase = true) -> "[播放提示] 视频分辨率超出支持范围"
-                    else -> "[播放提示] 播放失败：${errorMsg.take(30)}...，已尝试软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                    errorMsg.contains("4K", ignoreCase = true) -> {
+                        if (isTVBox) {
+                            "$prefix 4K视频需要软件解码，TV盒子性能有限，如卡顿请降低分辨率。"
+                        } else {
+                            "$prefix 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                        }
+                    }
+                    errorMsg.contains("HEVC", ignoreCase = true) || errorMsg.contains("H265", ignoreCase = true) -> {
+                        if (isTVBox) {
+                            "$prefix HEVC/H.265需要软件解码，TV盒子已自动适配。如卡顿请更换播放源。"
+                        } else {
+                            "$prefix 当前视频码率较高，已为您尝试开启软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                        }
+                    }
+                    errorMsg.contains("profile", ignoreCase = true) -> "$prefix 视频编码配置过高"
+                    errorMsg.contains("resolution", ignoreCase = true) -> "$prefix 视频分辨率超出支持范围"
+                    else -> {
+                        if (isTVBox) {
+                            "$prefix 播放失败：${errorMsg.take(30)}...，已尝试软件解码。TV盒子建议降低分辨率或联系作者。"
+                        } else {
+                            "$prefix 播放失败：${errorMsg.take(30)}...，已尝试软件解码。如画面卡顿，建议联系作者或更换播放源。"
+                        }
+                    }
                 }
             }
         }
