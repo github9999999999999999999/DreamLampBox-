@@ -1,16 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 梦灯盒 TV盒子矢量占位图 - 极低内存占用 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
+    android:width="200dp"
+    android:height="112dp"
+    android:viewportWidth="200"
+    android:viewportHeight="112">
+    
+    <!-- 背景 -->
     <path
-        android:fillColor="#80FFFFFF"
-        android:pathData="M8,5v14l11,-7z"/>
+        android:fillColor="#1A1A1A"
+        android:pathData="M0,0h200v112h-200z"/>
+    
+    <!-- 电影胶片图标外圈 -->
     <path
-        android:fillColor="#80FFFFFF"
-        android:pathData="M18,12l-5,-3.5v7z"/>
+        android:fillColor="#404040"
+        android:pathData="M100,20c-19.882,0 -36,16.118 -36,36s16.118,36 36,36 36,-16.118 36,-36 -16.118,-36 -36,-36zM100,88c-17.673,0 -32,-14.327 -32,-32s14.327,-32 32,-32 32,14.327 32,32 -14.327,32 -32,32z"/>
+    
+    <!-- 播放三角形 -->
     <path
-        android:fillColor="#80FFFFFF"
-        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8 8,3.59 8,8 -3.59,8 -8,8z"/>
+        android:fillColor="#666666"
+        android:pathData="M88,40v32l28,-16z"/>
+    
+    <!-- 底部文字区域背景 -->
+    <path
+        android:fillColor="#0D0D0D"
+        android:pathData="M0,92h200v20h-200z"/>
 </vector>

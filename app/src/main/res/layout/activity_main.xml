@@ -1,26 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 梦灯盒 主布局 - TV盒子24dp过扫描安全边距 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000">
 
-    <!-- Video Layer: Always Full Screen, Force Zoom/Crop -->
+    <!-- 视频播放层：全屏，强制缩放裁剪 -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/player_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:focusable="true"
         android:focusableInTouchMode="true"
-        app:resize_mode="zoom" />
+        app:resize_mode="zoom"
+        app:use_controller="true"
+        app:show_buffering="when_playing" />
 
-    <!-- Menu Layer: Full Screen Overlay List (Width=match_parent) -->
+    <!-- 菜单覆盖层：24dp内边距防止TV过扫描 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_menu"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#CC000000"
-        android:padding="0dp"
+        android:padding="24dp"
         android:clipToPadding="false"
         android:visibility="gone"
         android:focusable="true"
