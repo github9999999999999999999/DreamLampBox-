@@ -2,4 +2,12 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- 赛博佛道配色 -->
+    <color name="color_cyber_gold">#FFD700</color>
+    <color name="color_cyber_gold_dark">#CCAA00</color>
+    <color name="color_cyber_gold_alpha20">#20FFD700</color>
+    <color name="color_cyber_gold_alpha40">#40FFD700</color>
+    <color name="color_cyber_background">#0D0D0D</color>
+    <color name="color_cyber_surface">#1A1A1A</color>
 </resources>

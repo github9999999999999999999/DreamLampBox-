@@ -12,14 +12,14 @@
     android:focusableInTouchMode="true"
     android:background="@drawable/selector_item_focus">
 
-    <!-- 缩略图：200x112 比例，极低内存占用 -->
+    <!-- 缩略图：240x135 赛博佛道规范 -->
     <ImageView
         android:id="@+id/iv_thumb"
         android:layout_width="0dp"
         android:layout_height="180dp"
         android:scaleType="centerCrop"
         android:adjustViewBounds="true"
-        android:src="@drawable/ic_video_placeholder"
+        android:src="@drawable/ic_movie_placeholder"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"

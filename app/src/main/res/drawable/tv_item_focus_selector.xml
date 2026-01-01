@@ -1,50 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 梦灯盒 TV焦点选择器 - 白色粗边框 3dp + 1.1倍放大效果 -->
+<!-- 梦灯盒 赛博佛道焦点选择器 - 赛博金 #FFD700 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <!-- 焦点状态：明显白色粗边框 (3dp) - 确保用户知道焦点在哪里 -->
+    <!-- 焦点状态：赛博金边框 (3dp) -->
     <item android:state_focused="true">
-        <layer-list>
-            <!-- 白色粗边框背景 -->
-            <item>
-                <shape android:shape="rectangle">
-                    <stroke 
-                        android:width="3dp" 
-                        android:color="#FFFFFFFF"/>
-                    <solid android:color="#30FFFFFF"/>
-                    <corners android:radius="4dp"/>
-                </shape>
-            </item>
-        </layer-list>
+        <shape android:shape="rectangle">
+            <stroke 
+                android:width="3dp" 
+                android:color="#FFD700"/>
+            <solid android:color="#20FFD700"/>
+            <corners android:radius="6dp"/>
+        </shape>
     </item>
     
-    <!-- 按下状态：白色填充反馈 -->
+    <!-- 按下状态：赛博金填充 -->
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
             <stroke 
                 android:width="3dp" 
-                android:color="#FFFFFFFF"/>
-            <solid android:color="#50FFFFFF"/>
-            <corners android:radius="4dp"/>
+                android:color="#FFD700"/>
+            <solid android:color="#40FFD700"/>
+            <corners android:radius="6dp"/>
         </shape>
     </item>
     
-    <!-- 选中状态：浅白色确认 -->
+    <!-- 选中状态：淡金确认 -->
     <item android:state_selected="true">
         <shape android:shape="rectangle">
             <stroke 
                 android:width="2dp" 
-                android:color="#CCFFFFFF"/>
-            <solid android:color="#20FFFFFF"/>
-            <corners android:radius="4dp"/>
+                android:color="#CCAA00"/>
+            <solid android:color="#15FFD700"/>
+            <corners android:radius="6dp"/>
         </shape>
     </item>
     
-    <!-- 默认状态：透明无边框 -->
+    <!-- 默认状态：透明 -->
     <item>
         <shape android:shape="rectangle">
             <solid android:color="#00000000"/>
-            <corners android:radius="4dp"/>
+            <corners android:radius="6dp"/>
         </shape>
     </item>
 </selector>

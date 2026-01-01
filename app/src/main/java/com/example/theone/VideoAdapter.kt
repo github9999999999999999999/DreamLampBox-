@@ -43,17 +43,17 @@ class VideoAdapter(
         holder.tvTitle.text = videoFile.name
         
         // ============================================
-        // 极致内存防御 - TV盒子保命参数
+        // 极致内存防御 - TV盒子保命参数 (赛博佛道规范)
         // ============================================
         Glide.with(context)
             .asBitmap()
             .load(videoFile)
-            .override(200, 112)                              // 强制极小尺寸
-            .format(DecodeFormat.PREFER_RGB_565)             // 砍掉一半内存占用
-            .frame(1000000)                                  // 提取第1秒
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)   // 缓存处理后的资源
-            .placeholder(R.drawable.ic_video_placeholder)    // 矢量兜底图
-            .error(R.drawable.ic_video_placeholder)          // 错误兜底图
+            .override(240, 135)                              // 16:9极致降维
+            .format(DecodeFormat.PREFER_RGB_565)             // 节省50%内存
+            .frame(1000000)                                  // 取第1秒
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)   // 缓存处理后资源
+            .placeholder(R.drawable.ic_movie_placeholder)    // 赛博佛道占位图
+            .error(R.drawable.ic_movie_placeholder)          // 错误兜底图
             .into(holder.ivThumb)
         
         // 点击事件
